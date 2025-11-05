@@ -1,44 +1,41 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   buildForAndroid:
-    name: Build for Android
+    name: Build for Android  
     runs-on: ubuntu-latest
+    timeout-minutes: 90
+    
     steps:
-      # Checkout repository
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
 
-      # Cache Library folder
       - name: Cache Library
         uses: actions/cache@v4
         with:
           path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          key: Library-Android-2022.3.21f1-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: |
+            Library-Android-2022.3.21f1-
             Library-Android-
-            Library-
 
-      # Free disk space (Unity builds need space)
       - name: Free Disk Space
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
 
-      # Build with Unity
-      - name: Build Android APK
+      - name: Build Android
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -49,26 +46,16 @@ jobs:
           unityVersion: 2022.3.21f1
           buildName: EduAR
           buildsPath: builds
-          androidExportType: androidPackage
           androidKeystoreName: user.keystore
           androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
           androidKeyaliasName: ${{ secrets.ANDROID_KEYALIAS_NAME }}
           androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
 
-      # Upload APK as artifact
-      - name: Upload APK
+      - name: Upload Build
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: EduAR-Android-APK
-          path: builds/Android/*.apk
-          retention-days: 30
-
-      # Create release on tag push
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: builds/Android/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: EduAR-Android
+          path: builds/Android
+          retention-days: 14
