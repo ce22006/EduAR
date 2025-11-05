@@ -49,7 +49,7 @@ jobs:
           unityVersion: 2022.3.21f1
           buildName: EduAR
           buildsPath: builds
-          androidAppBundle: false
+          androidExportType: androidPackage
           androidKeystoreName: user.keystore
           androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
