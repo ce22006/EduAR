@@ -21,7 +21,7 @@ jobs:
 
       # Cache Library folder
       - name: Cache Library
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: Library
           key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -58,7 +58,7 @@ jobs:
 
       # Upload APK as artifact
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: EduAR-Android-APK
           path: builds/Android/*.apk
