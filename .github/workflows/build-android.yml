@@ -52,10 +52,37 @@ jobs:
           androidKeyaliasName: ${{ secrets.ANDROID_KEYALIAS_NAME }}
           androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
 
-      - name: Upload Build
+      # Collect Unity Editor log for debugging (upload even on failure)
+      - name: Collect Unity Editor log
+        if: always()
+        run: |
+          echo "Looking for Unity Editor logs..."
+          # Common Editor log locations
+          LOG_PATHS=("$HOME/.config/unity3d/Editor.log" "/home/runner/.config/unity3d/Editor.log" "$RUNNER_TEMP/Editor.log" "/root/.config/unity3d/Editor.log")
+          FOUND=0
+          for p in "${LOG_PATHS[@]}"; do
+            if [ -f "$p" ]; then
+              echo "Found log: $p"
+              mkdir -p build-logs
+              cp "$p" build-logs/Editor.log
+              FOUND=1
+              break
+            fi
+          done
+          if [ $FOUND -eq 0 ]; then
+            echo "No Editor.log found in common locations. Dumping possible Unity temp files:" || true
+            ls -la $RUNNER_TEMP || true
+            # create an empty placeholder so upload step has something
+            mkdir -p build-logs
+            echo "No Editor.log found" > build-logs/Editor.log
+          fi
+
+      - name: Upload Build and Logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: EduAR-Android
-          path: builds/Android
+          name: EduAR-Android-and-Logs
+          path: |
+            builds/Android
+            build-logs/Editor.log
           retention-days: 14
