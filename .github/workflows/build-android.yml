@@ -35,7 +35,7 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           df -h
 
-      - name: Build Android
+      - name: Build Android APK
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -44,45 +44,27 @@ jobs:
         with:
           targetPlatform: Android
           unityVersion: 2022.3.21f1
-          buildName: EduAR
+          buildMethod: BuildScript.PerformAndroidBuild
           buildsPath: builds
           androidKeystoreName: user.keystore
           androidKeystoreBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           androidKeystorePass: ${{ secrets.ANDROID_KEYSTORE_PASS }}
           androidKeyaliasName: ${{ secrets.ANDROID_KEYALIAS_NAME }}
           androidKeyaliasPass: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+          allowDirtyBuild: true
 
-      # Collect Unity Editor log for debugging (upload even on failure)
-      - name: Collect Unity Editor log
+      - name: List build output
         if: always()
         run: |
-          echo "Looking for Unity Editor logs..."
-          # Common Editor log locations
-          LOG_PATHS=("$HOME/.config/unity3d/Editor.log" "/home/runner/.config/unity3d/Editor.log" "$RUNNER_TEMP/Editor.log" "/root/.config/unity3d/Editor.log")
-          FOUND=0
-          for p in "${LOG_PATHS[@]}"; do
-            if [ -f "$p" ]; then
-              echo "Found log: $p"
-              mkdir -p build-logs
-              cp "$p" build-logs/Editor.log
-              FOUND=1
-              break
-            fi
-          done
-          if [ $FOUND -eq 0 ]; then
-            echo "No Editor.log found in common locations. Dumping possible Unity temp files:" || true
-            ls -la $RUNNER_TEMP || true
-            # create an empty placeholder so upload step has something
-            mkdir -p build-logs
-            echo "No Editor.log found" > build-logs/Editor.log
-          fi
+          echo "=== Build directory contents ==="
+          ls -lah builds/ || echo "builds/ directory not found"
+          ls -lah builds/Android/ || echo "builds/Android/ directory not found"
+          find builds -type f -name "*.apk" -o -name "*.log" || echo "No APK or log files found"
 
-      - name: Upload Build and Logs
+      - name: Upload APK
         uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
-          name: EduAR-Android-and-Logs
-          path: |
-            builds/Android
-            build-logs/Editor.log
+          name: EduAR-APK
+          path: builds/Android/*.apk
           retention-days: 14
